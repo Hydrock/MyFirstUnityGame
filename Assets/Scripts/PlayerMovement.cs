@@ -4,10 +4,12 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour
 {
     public float speed = 5f;
+    public float jumpForce = 6f;
     public Transform cameraTransform;
 
     private Rigidbody rb;
     private Vector3 moveInput;
+    private bool isGrounded;
 
     void Start()
     {
@@ -17,6 +19,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        // Управление движением
         float horizontal = Input.GetAxisRaw("Horizontal");
         float vertical = Input.GetAxisRaw("Vertical");
 
@@ -28,21 +31,39 @@ public class PlayerMovement : MonoBehaviour
             Quaternion camRotation = Quaternion.Euler(0f, targetAngle, 0f);
             moveInput = camRotation * Vector3.forward;
 
-            // Поворот капсулы
-            transform.rotation = Quaternion.Slerp(transform.rotation, camRotation, 0.15f);
+            // Поворот игрока
+            transform.rotation = Quaternion.Slerp(transform.rotation, camRotation, 0.1f);
         }
         else
         {
             moveInput = Vector3.zero;
         }
+
+        // Прыжок
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+        {
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+        }
     }
 
     void FixedUpdate()
     {
-        // Сохраняем текущую вертикальную скорость
         Vector3 velocity = moveInput.normalized * speed;
-        velocity.y = rb.linearVelocity.y;
-
+        velocity.y = rb.linearVelocity.y; // сохраняем вертикальное ускорение
         rb.linearVelocity = velocity;
+    }
+
+    void OnCollisionStay(Collision collision)
+    {
+        // Простейшая проверка "на земле"
+        if (collision.contacts.Length > 0 && Vector3.Angle(collision.contacts[0].normal, Vector3.up) < 45f)
+        {
+            isGrounded = true;
+        }
+    }
+
+    void OnCollisionExit(Collision collision)
+    {
+        isGrounded = false;
     }
 }
