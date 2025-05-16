@@ -4,38 +4,45 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour
 {
     public float speed = 5f;
-    public Transform cameraTransform; // Камера
+    public Transform cameraTransform;
 
     private Rigidbody rb;
+    private Vector3 moveInput;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        rb.freezeRotation = true;
+    }
+
+    void Update()
+    {
+        float horizontal = Input.GetAxisRaw("Horizontal");
+        float vertical = Input.GetAxisRaw("Vertical");
+
+        Vector3 inputDir = new Vector3(horizontal, 0, vertical).normalized;
+
+        if (inputDir.magnitude >= 0.1f)
+        {
+            float targetAngle = Mathf.Atan2(inputDir.x, inputDir.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
+            Quaternion camRotation = Quaternion.Euler(0f, targetAngle, 0f);
+            moveInput = camRotation * Vector3.forward;
+
+            // Поворот капсулы
+            transform.rotation = Quaternion.Slerp(transform.rotation, camRotation, 0.15f);
+        }
+        else
+        {
+            moveInput = Vector3.zero;
+        }
     }
 
     void FixedUpdate()
     {
-        float moveX = Input.GetAxis("Horizontal");
-        float moveZ = Input.GetAxis("Vertical");
+        // Сохраняем текущую вертикальную скорость
+        Vector3 velocity = moveInput.normalized * speed;
+        velocity.y = rb.linearVelocity.y;
 
-        Vector3 inputDirection = new Vector3(moveX, 0f, moveZ).normalized;
-
-        if (inputDirection.magnitude >= 0.1f)
-        {
-            // Поворачиваем движение в сторону камеры
-            float targetAngle = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + cameraTransform.eulerAngles.y;
-            Quaternion targetRotation = Quaternion.Euler(0f, targetAngle, 0f);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 0.1f);
-
-            // Направление движения с учётом поворота
-            Vector3 moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
-            Vector3 velocity = new Vector3(moveDir.x * speed, rb.linearVelocity.y, moveDir.z * speed);
-            rb.linearVelocity = velocity;
-        }
-        else
-        {
-            // Если игрок не двигается — оставляем вертикальную скорость
-            rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
-        }
+        rb.linearVelocity = velocity;
     }
 }
