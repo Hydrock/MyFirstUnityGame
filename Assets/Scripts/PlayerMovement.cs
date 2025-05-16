@@ -11,10 +11,14 @@ public class PlayerMovement : MonoBehaviour
     private Vector3 moveInput;
     private bool isGrounded;
 
+    private Animator animator;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
+
+        animator = GetComponent<Animator>();
     }
 
     void Update()
@@ -44,6 +48,9 @@ public class PlayerMovement : MonoBehaviour
         {
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
         }
+
+        animator.SetFloat("Speed", new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude);
+        animator.SetBool("IsJumping", !isGrounded);
     }
 
     void FixedUpdate()
